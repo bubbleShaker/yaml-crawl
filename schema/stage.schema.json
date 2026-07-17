@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "yaml-crawl stage",
+  "type": "object",
+  "required": ["name", "legend", "map"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "legend": {
+      "type": "object",
+      "description": "map 中の 1 文字 → タイル種別",
+      "minProperties": 1,
+      "propertyNames": {
+        "minLength": 1,
+        "maxLength": 1
+      },
+      "additionalProperties": {
+        "enum": ["wall", "floor", "start", "goal"]
+      }
+    },
+    "map": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
