@@ -1,0 +1,6 @@
+# テキストは常に LF で正規化する（Windows エディタの CRLF 保存による差分ノイズを防ぐ）
+* text=auto eol=lf
+
+# バイナリは変換しない
+*.png binary
+*.jpg binary
