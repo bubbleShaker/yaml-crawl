@@ -55,16 +55,20 @@ goblin: { <<: *base, name: goblin }
 ```
 
 ## マイルストーン（小さく刻む = 各 Issue）
-- [ ] **M0** 環境セットアップ（package.json / tsconfig / vitest / tsx）
-- [ ] **M1** YAML ローダ + スキーマ検証（TDD。1ステージ読んで検証）
-- [ ] **M2** ターミナル描画（マップ表示）
-- [ ] **M3** プレイヤー移動 + 壁判定 + ゴール判定（＝遊べる）
+- [x] **M0** 環境セットアップ（package.json / tsconfig / vitest / tsx）— #1 / PR #7
+- [x] **M1** YAML ローダ + スキーマ検証（TDD。1ステージ読んで検証）— #2
+- [x] **M2** ターミナル描画（マップ表示）— #10 / PR #11
+- [ ] **M3** プレイヤー移動 + 壁判定 + ゴール判定（＝遊べる）— #12
 - [ ] **M4** 複数ステージ（`---`）+ 鍵・扉
 - [ ] **M5** 敵（アンカーでテンプレ共通化）+ 接触判定
+
+補足: chore として `.gitattributes` で改行を LF 正規化済み（#8 / PR #9）。
 
 ## 開発サイクル（CLAUDE.md 準拠）
 Issue 起票 → 実装（Issue ブランチ）→ reviewer サブエージェントでレビュー → 🔴must 解消 → PR → マージ。
 GitHub: https://github.com/bubbleShaker/yaml-crawl （public）
 
 ## 現在地
-M0/M1 に着手予定。
+M0〜M2 完了。M3（プレイヤー移動・壁/ゴール判定＝遊べる）に着手中。
+- ロジックは `src/game.ts`（純粋関数・vitest 対象）、入力 I/O は `src/index.ts`（readline raw mode）に分離。
+- 描画は `renderGame(state)` を `src/render.ts` に追加し、開始マスは床に戻して現在地へ `@` を重ねる。
