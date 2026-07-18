@@ -29,8 +29,10 @@ export function renderStage(stage: Stage): string {
       [...line]
         .map((ch) => {
           const kind = stage.legend[ch];
-          // legend 未定義文字は loader が事前に弾く前提。保険として素の文字を残す。
-          return kind ? GLYPH[kind] : ch;
+          // legend 未定義文字は loader が事前に弾く前提。ただし renderStage は
+          // 未検証の Stage でも呼べる公開関数なので、黙って素の文字を通さず
+          // 可視マーカー "?" に寄せて異常に気づけるようにする。
+          return kind ? GLYPH[kind] : "?";
         })
         .join(""),
     )

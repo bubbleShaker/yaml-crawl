@@ -46,5 +46,20 @@ describe("renderStage", () => {
     const out = renderStage(stage);
     expect(out.split("\n")).toHaveLength(5);
     expect(out.split("\n")[0]).toBe("#######");
+    // glyph 変換が実ファイル経由でも効いていること（回帰検出）
+    expect(out).toContain("@"); // start
+    expect(out).toContain("G"); // goal
+    expect(out).toContain(GLYPH.floor); // 床が記号化されている
+    expect(out).not.toContain("."); // 生の床文字は残らない
+  });
+
+  it("legend 未定義の文字は可視マーカー ? になる", () => {
+    // 検証を通さず未定義文字を含む Stage を直接構築（renderStage の保険挙動）
+    const stage = {
+      name: "壊れた部屋",
+      legend: { "#": "wall" as const },
+      map: "#X#",
+    };
+    expect(renderStage(stage)).toBe("#?#");
   });
 });
