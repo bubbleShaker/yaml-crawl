@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { fileURLToPath } from "node:url";
 import { renderStage, renderGame, GLYPH } from "../src/render.js";
-import { parseStage, loadStageFile } from "../src/loader.js";
+import { parseStage, parseStages, loadStagesFile } from "../src/loader.js";
 import { createGame, move } from "../src/game.js";
 
 const smallYaml = `
@@ -41,9 +41,9 @@ describe("renderStage", () => {
     expect(out.split("\n")).toHaveLength(4);
   });
 
-  it("tutorial.yaml を描画できる", () => {
+  it("tutorial.yaml の先頭ステージを描画できる", () => {
     const path = fileURLToPath(new URL("../stages/tutorial.yaml", import.meta.url));
-    const stage = loadStageFile(path);
+    const stage = loadStagesFile(path)[0];
     const out = renderStage(stage);
     expect(out.split("\n")).toHaveLength(5);
     expect(out.split("\n")[0]).toBe("#######");
@@ -89,5 +89,36 @@ describe("renderGame", () => {
     const out = renderGame(state);
     // 開始マス(1,1)は床、現在地(2,1)に @
     expect(out.split("\n")[1]).toBe(`#${GLYPH.floor}@G#`);
+  });
+
+  it("次ステージへ遷移すると、その現在ステージのマップを描く", () => {
+    const twoStages = `
+name: 一つ目
+legend:
+  "#": wall
+  "@": start
+  "G": goal
+map: |
+  ####
+  #@G#
+  ####
+---
+name: 二つ目
+legend:
+  "#": wall
+  "@": start
+  "G": goal
+  ".": floor
+map: |
+  #####
+  #@..#
+  #..G#
+  #####
+`;
+    const state = move(createGame(parseStages(twoStages)), "right"); // ステージ2へ
+    const out = renderGame(state);
+    // 二つ目のマップ（5 行）が描かれ、先頭は 5 文字の壁
+    expect(out.split("\n")).toHaveLength(4);
+    expect(out.split("\n")[0]).toBe("#####");
   });
 });

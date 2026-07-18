@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseStage } from "../src/loader.js";
+import { parseStage, parseStages } from "../src/loader.js";
 import { createGame, move } from "../src/game.js";
 
 // 横一列: 壁 スタート 床 ゴール 壁
@@ -58,5 +58,60 @@ describe("move", () => {
     const start = createGame(parseStage(yaml));
     move(start, "right");
     expect(start.player).toEqual({ x: 1, y: 1 });
+  });
+});
+
+// 2 ステージ: それぞれ @ の右隣が G（1 手でゴール）
+const twoStages = `
+name: 一つ目
+legend:
+  "#": wall
+  "@": start
+  "G": goal
+map: |
+  ####
+  #@G#
+  ####
+---
+name: 二つ目
+legend:
+  "#": wall
+  "@": start
+  "G": goal
+map: |
+  ####
+  #@G#
+  ####
+`;
+
+describe("複数ステージの進行", () => {
+  it("初期状態は先頭ステージ(index 0)", () => {
+    const state = createGame(parseStages(twoStages));
+    expect(state.index).toBe(0);
+    expect(state.stages).toHaveLength(2);
+    expect(state.won).toBe(false);
+  });
+
+  it("非最終ステージのゴールでは won にならず、次ステージの start へ遷移する", () => {
+    let state = createGame(parseStages(twoStages));
+    state = move(state, "right"); // ステージ1のゴール
+    expect(state.index).toBe(1);
+    expect(state.won).toBe(false);
+    expect(state.player).toEqual({ x: 1, y: 1 }); // 次ステージの start 位置
+  });
+
+  it("最終ステージのゴールで won（全クリア）になる", () => {
+    let state = createGame(parseStages(twoStages));
+    state = move(state, "right"); // ステージ1クリア → ステージ2へ
+    state = move(state, "right"); // ステージ2のゴール
+    expect(state.index).toBe(1);
+    expect(state.won).toBe(true);
+  });
+
+  it("単体 Stage を渡すと 1 ステージのゲームになり、ゴールで即 won", () => {
+    let state = createGame(parseStage(yaml));
+    expect(state.stages).toHaveLength(1);
+    state = move(move(state, "right"), "right");
+    expect(state.won).toBe(true);
   });
 });
