@@ -1,19 +1,5 @@
-import type { Stage } from "./types.js";
+import type { Stage, Position, Direction, GameState } from "./types.js";
 import { toRows, tileKindAt } from "./grid.js";
-
-export interface Position {
-  x: number;
-  y: number;
-}
-
-export type Direction = "up" | "down" | "left" | "right";
-
-/** ゲームの状態。move は新しい GameState を返す（不変・純粋）。 */
-export interface GameState {
-  stage: Stage;
-  player: Position;
-  won: boolean;
-}
 
 /** 方向 → 座標の増分 */
 const DELTA: Record<Direction, Position> = {

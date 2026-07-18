@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import readline from "node:readline";
 import { loadStageFile } from "./loader.js";
 import { renderGame } from "./render.js";
-import { createGame, move, type Direction, type GameState } from "./game.js";
-import type { Stage } from "./types.js";
+import { createGame, move } from "./game.js";
+import type { Stage, Direction, GameState } from "./types.js";
 
 export function banner(): string {
   return "yaml-crawl — YAML でダンジョンを潜れ";
@@ -33,6 +33,8 @@ function draw(state: GameState): void {
 /**
  * キー入力ループを起動する（実行専用・副作用あり）。
  * readline.emitKeypressEvents + raw mode で、Enter を待たず 1 キーずつ拾う。
+ * 注意: 1 プロセスにつき 1 回だけ呼ぶ前提（keypress リスナを解除しないため、
+ * 複数回呼ぶとリスナが多重登録される）。複数ステージ連続プレイは M4 で扱う。
  */
 export function play(stage: Stage): void {
   let state = createGame(stage);
@@ -43,12 +45,14 @@ export function play(stage: Stage): void {
   process.stdin.setRawMode?.(true);
   process.stdin.resume();
 
+  // どの経路で終了しても端末を元に戻す（例外落ち等で raw mode が残るのを防ぐ）。
+  process.on("exit", () => process.stdin.setRawMode?.(false));
+
   process.stdin.on("keypress", (_str, key) => {
     if (!key) return;
 
-    // q または Ctrl+C で終了
+    // q または Ctrl+C で終了（raw mode 復元は上の exit ハンドラが担う）
     if (key.name === "q" || (key.ctrl && key.name === "c")) {
-      process.stdin.setRawMode?.(false);
       process.exit(0);
     }
 

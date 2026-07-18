@@ -1,5 +1,4 @@
-import type { Stage, TileKind } from "./types.js";
-import type { GameState } from "./game.js";
+import type { Stage, TileKind, GameState } from "./types.js";
 import { toRows } from "./grid.js";
 
 /**
