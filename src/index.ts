@@ -2,9 +2,10 @@
 // ゲームロジックは game.ts（純粋・テスト済み）に置き、ここは I/O だけを担う。
 import { fileURLToPath } from "node:url";
 import readline from "node:readline";
-import { loadStageFile } from "./loader.js";
+import { loadStagesFile } from "./loader.js";
 import { renderGame } from "./render.js";
 import { createGame, move } from "./game.js";
+import { currentStage } from "./grid.js";
 import type { Stage, Direction, GameState } from "./types.js";
 
 export function banner(): string {
@@ -23,10 +24,11 @@ const KEY_TO_DIR: Record<string, Direction> = {
 function draw(state: GameState): void {
   console.clear();
   console.log(banner());
-  console.log(`\n【${state.stage.name}】  矢印キーで移動 / q で終了\n`);
+  const progress = `${state.index + 1}/${state.stages.length}`;
+  console.log(`\n【${currentStage(state).name}】 (${progress})  矢印キーで移動 / q で終了\n`);
   console.log(renderGame(state));
   if (state.won) {
-    console.log("\n🎉 ゴール到達！クリアなのだ（q で終了）");
+    console.log("\n🎉 全ステージクリアなのだ！（q で終了）");
   }
 }
 
@@ -34,10 +36,11 @@ function draw(state: GameState): void {
  * キー入力ループを起動する（実行専用・副作用あり）。
  * readline.emitKeypressEvents + raw mode で、Enter を待たず 1 キーずつ拾う。
  * 注意: 1 プロセスにつき 1 回だけ呼ぶ前提（keypress リスナを解除しないため、
- * 複数回呼ぶとリスナが多重登録される）。複数ステージ連続プレイは M4 で扱う。
+ * 複数回呼ぶとリスナが多重登録される）。ステージ遷移は state 内 index で扱うので
+ * play は 1 回起動のままで複数ステージを連続プレイできる。
  */
-export function play(stage: Stage): void {
-  let state = createGame(stage);
+export function play(stages: Stage | Stage[]): void {
+  let state = createGame(stages);
   draw(state);
 
   readline.emitKeypressEvents(process.stdin);
@@ -64,10 +67,10 @@ export function play(stage: Stage): void {
   });
 }
 
-/** 既定ステージを読み込んで遊ぶ。将来は argv でステージ選択できるようにする。 */
+/** 既定ステージ集を読み込んで遊ぶ。将来は argv でステージ選択できるようにする。 */
 export function main(): void {
   const stagePath = fileURLToPath(new URL("../stages/tutorial.yaml", import.meta.url));
-  play(loadStageFile(stagePath));
+  play(loadStagesFile(stagePath));
 }
 
 // 直接実行されたときだけループを起動する（import 時は副作用なし）。

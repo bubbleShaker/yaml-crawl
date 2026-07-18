@@ -19,9 +19,17 @@ export interface Position {
 
 export type Direction = "up" | "down" | "left" | "right";
 
-/** ゲームの状態。move は新しい GameState を返す（不変・純粋）。 */
+/**
+ * ゲームの状態。move は新しい GameState を返す（不変・純粋）。
+ * 複数ステージを保持し、ゴールで次ステージへ進む。現在のステージは
+ * `stages[index]`（描画・移動判定は grid.ts の currentStage を通す）。
+ */
 export interface GameState {
-  stage: Stage;
+  /** 収録された全ステージ（YAML の --- で区切られた順） */
+  stages: Stage[];
+  /** 現在プレイ中のステージ番号（0 始まり） */
+  index: number;
   player: Position;
+  /** 最終ステージのゴールに到達＝全クリア */
   won: boolean;
 }

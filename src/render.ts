@@ -1,5 +1,5 @@
 import type { Stage, TileKind, GameState } from "./types.js";
-import { toRows } from "./grid.js";
+import { toRows, currentStage } from "./grid.js";
 
 /**
  * タイル種別 → 画面表示文字。
@@ -35,7 +35,8 @@ export function renderStage(stage: Stage): string {
  * - 開始マス(start)は歩いた跡として床に見せる（"@" が残らないように）
  */
 export function renderGame(state: GameState): string {
-  const { stage, player } = state;
+  const stage = currentStage(state);
+  const { player } = state;
   return toRows(stage.map)
     .map((line, y) =>
       [...line]

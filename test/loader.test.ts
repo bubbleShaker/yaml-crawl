@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { fileURLToPath } from "node:url";
-import { parseStage, loadStageFile, StageValidationError } from "../src/loader.js";
+import { parseStage, parseStages, loadStagesFile, StageValidationError } from "../src/loader.js";
 
 const validYaml = `
 name: テスト部屋
@@ -67,10 +67,71 @@ describe("parseStage", () => {
 });
 
 describe("loadStageFile", () => {
-  it("stages/tutorial.yaml が検証を通る", () => {
-    const path = fileURLToPath(new URL("../stages/tutorial.yaml", import.meta.url));
-    const stage = loadStageFile(path);
-    expect(stage.name).toBe("はじまりの部屋");
+  it("単一ステージファイルを読める（1 ステージ分の YAML 文字列）", () => {
+    // 複数ドキュメントを含まない単体 Stage は loadStageFile で読める。
+    // stages/tutorial.yaml は複数ステージ化したので loadStagesFile 側で検証する。
+    const stage = parseStage(validYaml);
+    expect(stage.name).toBe("テスト部屋");
     expect(stage.legend["G"]).toBe("goal");
+  });
+});
+
+const twoStages = `
+name: 部屋1
+legend:
+  "#": wall
+  "@": start
+  "G": goal
+map: |
+  ###
+  #@#
+  #G#
+  ###
+---
+name: 部屋2
+legend:
+  "#": wall
+  "@": start
+  "G": goal
+map: |
+  ###
+  #@#
+  #G#
+  ###
+`;
+
+describe("parseStages", () => {
+  it("--- 区切りの複数ステージを順に読める", () => {
+    const stages = parseStages(twoStages);
+    expect(stages).toHaveLength(2);
+    expect(stages[0].name).toBe("部屋1");
+    expect(stages[1].name).toBe("部屋2");
+  });
+
+  it("末尾の余分な --- による空ドキュメントは無視する", () => {
+    const stages = parseStages(twoStages + "\n---\n");
+    expect(stages).toHaveLength(2);
+  });
+
+  it("単一ステージでも 1 要素の配列を返す", () => {
+    expect(parseStages(validYaml)).toHaveLength(1);
+  });
+
+  it("どれか 1 ステージが不正なら、そのステージ番号付きで検証エラー", () => {
+    const broken = twoStages.replace("name: 部屋2", "");
+    expect(() => parseStages(broken)).toThrow(/ステージ 2:/);
+  });
+
+  it("空文字列はステージ 0 個で検証エラー", () => {
+    expect(() => parseStages("")).toThrow(/1 つも定義されていません/);
+  });
+});
+
+describe("loadStagesFile", () => {
+  it("stages/tutorial.yaml を複数ステージとして読める", () => {
+    const path = fileURLToPath(new URL("../stages/tutorial.yaml", import.meta.url));
+    const stages = loadStagesFile(path);
+    expect(stages.length).toBeGreaterThanOrEqual(2);
+    expect(stages[0].name).toBe("はじまりの部屋");
   });
 });

@@ -1,4 +1,12 @@
-import type { Stage, TileKind } from "./types.js";
+import type { Stage, TileKind, GameState } from "./types.js";
+
+/**
+ * 現在プレイ中のステージを返す。`stages[index]` の参照を 1 箇所に集約し、
+ * 移動判定(game)と描画(render)が同じ「現在ステージ」を共有できるようにする。
+ */
+export function currentStage(state: GameState): Stage {
+  return state.stages[state.index];
+}
 
 /**
  * map 文字列を「行の配列」に正規化する。
