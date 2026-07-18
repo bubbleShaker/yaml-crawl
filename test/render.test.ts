@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { fileURLToPath } from "node:url";
-import { renderStage, GLYPH } from "../src/render.js";
+import { renderStage, renderGame, GLYPH } from "../src/render.js";
 import { parseStage, loadStageFile } from "../src/loader.js";
+import { createGame, move } from "../src/game.js";
 
 const smallYaml = `
 name: 小部屋
@@ -61,5 +62,32 @@ describe("renderStage", () => {
       map: "#X#",
     };
     expect(renderStage(stage)).toBe("#?#");
+  });
+});
+
+const roadYaml = `
+name: 一本道
+legend:
+  "#": wall
+  ".": floor
+  "@": start
+  "G": goal
+map: |
+  #####
+  #@.G#
+  #####
+`;
+
+describe("renderGame", () => {
+  it("初期状態はスタート位置に @ を描く", () => {
+    const out = renderGame(createGame(parseStage(roadYaml)));
+    expect(out.split("\n")[1]).toBe(`#@${GLYPH.floor}G#`);
+  });
+
+  it("移動後は現在地に @、開始マスは床に戻る", () => {
+    const state = move(createGame(parseStage(roadYaml)), "right");
+    const out = renderGame(state);
+    // 開始マス(1,1)は床、現在地(2,1)に @
+    expect(out.split("\n")[1]).toBe(`#${GLYPH.floor}@G#`);
   });
 });

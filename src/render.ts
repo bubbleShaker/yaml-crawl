@@ -1,9 +1,11 @@
 import type { Stage, TileKind } from "./types.js";
+import type { GameState } from "./game.js";
+import { toRows } from "./grid.js";
 
 /**
  * タイル種別 → 画面表示文字。
  * 表示の見た目はここ 1 箇所に集約する。将来 chalk で色付けする時も、
- * この対応表（と renderStage 内の置換）だけ変えれば描画側は触らずに済む。
+ * この対応表（と置換ロジック）だけ変えれば描画側は触らずに済む。
  */
 export const GLYPH: Record<TileKind, string> = {
   wall: "#",
@@ -12,27 +14,36 @@ export const GLYPH: Record<TileKind, string> = {
   goal: "G",
 };
 
+/** legend の 1 文字を表示文字へ変換する。未定義文字は可視マーカー "?"。 */
+function glyphOf(stage: Stage, ch: string): string {
+  const kind = stage.legend[ch];
+  return kind ? GLYPH[kind] : "?";
+}
+
 /**
- * Stage を「改行区切りのグリッド文字列」に変換する純粋関数。
+ * Stage を「改行区切りのグリッド文字列」に変換する純粋関数（静的なマップ表示用）。
  * 副作用を持たない（console.log しない）ことで vitest から直接検証できる。
- * 実際の画面出力は index.ts が console.log(renderStage(...)) で行う。
  */
 export function renderStage(stage: Stage): string {
-  // CR を除去し行に分割。map: | ブロックは末尾に空行が付きやすいので落とす。
-  const lines = stage.map.replace(/\r/g, "").split("\n");
-  while (lines.length > 0 && lines[lines.length - 1] === "") {
-    lines.pop();
-  }
+  return toRows(stage.map)
+    .map((line) => [...line].map((ch) => glyphOf(stage, ch)).join(""))
+    .join("\n");
+}
 
-  return lines
-    .map((line) =>
+/**
+ * ゲーム状態を描画する純粋関数。マップの上にプレイヤーを重ねる。
+ * - 現在地には start の glyph("@") を描く
+ * - 開始マス(start)は歩いた跡として床に見せる（"@" が残らないように）
+ */
+export function renderGame(state: GameState): string {
+  const { stage, player } = state;
+  return toRows(stage.map)
+    .map((line, y) =>
       [...line]
-        .map((ch) => {
-          const kind = stage.legend[ch];
-          // legend 未定義文字は loader が事前に弾く前提。ただし renderStage は
-          // 未検証の Stage でも呼べる公開関数なので、黙って素の文字を通さず
-          // 可視マーカー "?" に寄せて異常に気づけるようにする。
-          return kind ? GLYPH[kind] : "?";
+        .map((ch, x) => {
+          if (x === player.x && y === player.y) return GLYPH.start;
+          // 開始マスは床扱いにする
+          return stage.legend[ch] === "start" ? GLYPH.floor : glyphOf(stage, ch);
         })
         .join(""),
     )
