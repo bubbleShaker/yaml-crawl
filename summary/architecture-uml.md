@@ -42,7 +42,7 @@ graph TD
 ポイント:
 - **`types.ts` が一番内側** — 何にも依存しない（`Stage` / `GameState` などデータ型だけ）。
 - **`render` は `game` に依存しない** — 両方 `GameState` を受け取るだけで、描画とロジックが独立。
-- **`index.ts` だけが I/O 担当** — `console` / `readline` / `process` を触るのはここだけ。ロジックは全部純粋関数。
+- **実行時のユーザー I/O（描画・入力）は `index.ts` だけ** — `console` / `readline` / `process` を触るのはここだけ。ロジックは全部純粋関数（`loader.ts` は起動時のファイル読込 I/O のみ）。
 
 ## ② データ型のクラス図
 
@@ -64,15 +64,12 @@ classDiagram
         +number y
     }
     class TileKind {
-        <<enumeration>>
-        wall
-        floor
-        start
-        goal
+        <<union type>>
+        "wall" | "floor" | "start" | "goal"
     }
     class Direction {
-        <<enumeration>>
-        up / down / left / right
+        <<union type>>
+        "up" | "down" | "left" | "right"
     }
 
     GameState "1" o-- "*" Stage : stages
@@ -85,31 +82,40 @@ classDiagram
 
 ## ③ 起動〜移動の流れ（シーケンス図）
 
+`index.ts` は `main()`（ステージ読込）と `play()`（状態生成・入力ループ・描画）に
+責務が分かれている。描画は `play`/`draw` 内の副作用関数 `draw()` が `renderGame` を
+包んで `console` へ出す。
+
 ```mermaid
 sequenceDiagram
     participant U as ユーザー
-    participant I as index.ts
+    participant M as index.main()
+    participant P as index.play()
+    participant D as index.draw()
     participant L as loader.ts
     participant G as game.ts
     participant R as render.ts
 
-    I->>L: loadStagesFile(tutorial.yaml)
+    M->>L: loadStagesFile(tutorial.yaml)
     Note over L: YAML パース → JSON Schema 検証<br/>→ legend/map 整合チェック
-    L-->>I: Stage[]
-    I->>G: createGame(stages)
-    G-->>I: GameState (player=start)
-    I->>R: renderGame(state)
-    R-->>I: 画面文字列
-    I->>U: draw（console 出力）
+    L-->>M: Stage[]
+    M->>P: play(stages)
+    P->>G: createGame(stages)
+    G-->>P: GameState (player=start)
+    P->>D: draw(state)
+    D->>R: renderGame(state)
+    R-->>D: 画面文字列
+    D->>U: console 出力
 
     loop 矢印キーごと
-        U->>I: keypress(↑↓←→)
-        I->>G: move(state, dir)
+        U->>P: keypress(↑↓←→)
+        P->>G: move(state, dir)
         Note over G: 壁/範囲外→留まる<br/>goal→次ステージ or won=true
-        G-->>I: 新しい GameState（不変）
-        I->>R: renderGame(state)
-        R-->>I: 画面文字列
-        I->>U: 再描画
+        G-->>P: 新しい GameState（不変）
+        P->>D: draw(state)
+        D->>R: renderGame(state)
+        R-->>D: 画面文字列
+        D->>U: console 出力（再描画）
     end
 ```
 
